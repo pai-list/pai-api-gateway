@@ -51,6 +51,9 @@
       "new_classes": ["RateLimiter"]
     }
   ],
+  "routes": [
+    { "pattern": "api.axiomid.app/*", "zone_name": "axiomid.app" }
+  ],
   "env": {
     "staging": {
       "vars": {
@@ -62,7 +65,10 @@
       "vars": {
         "ENVIRONMENT": "production",
         "UPSTREAM_URL": "https://api.axiomid.app"
-      }
+      },
+      "routes": [
+        { "pattern": "api.axiomid.app/*", "zone_name": "axiomid.app" }
+      ]
     }
   }
 }
