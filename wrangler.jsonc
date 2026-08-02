@@ -1,0 +1,68 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "pai-api-gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "ENVIRONMENT": "production",
+    "API_VERSION": "v1",
+    "JWT_ISSUER": "pai-api-gateway",
+    "JWT_AUDIENCE": "pai-api-users"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "RATE_LIMITER",
+        "class_name": "RateLimiter"
+      }
+    ]
+  },
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT_STORE",
+      "id": "<RATE_LIMIT_KV_ID>",
+      "preview_id": "<RATE_LIMIT_KV_PREVIEW_ID>"
+    },
+    {
+      "binding": "CACHE_STORE",
+      "id": "<CACHE_KV_ID>",
+      "preview_id": "<CACHE_KV_PREVIEW_ID>"
+    },
+    {
+      "binding": "SESSION_STORE",
+      "id": "<SESSION_KV_ID>",
+      "preview_id": "<SESSION_KV_PREVIEW_ID>"
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "production",
+    "API_VERSION": "v1",
+    "JWT_ISSUER": "pai-api-gateway",
+    "JWT_AUDIENCE": "pai-api-users",
+    "RATE_LIMIT_RPM": "60",
+    "RATE_LIMIT_WINDOW_MS": "60000",
+    "CACHE_TTL_SECONDS": "300",
+    "UPSTREAM_URL": "https://api.axiomid.app"
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["RateLimiter"]
+    }
+  ],
+  "env": {
+    "staging": {
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "UPSTREAM_URL": "https://api-staging.axiomid.app"
+      }
+    },
+    "production": {
+      "vars": {
+        "ENVIRONMENT": "production",
+        "UPSTREAM_URL": "https://api.axiomid.app"
+      }
+    }
+  }
+}
