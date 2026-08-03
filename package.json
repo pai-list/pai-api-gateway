@@ -16,6 +16,11 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
+    "@pai/crypto": "^0.1.0",
+    "@pai/sdk": "^0.1.0",
+    "@pai/identity": "^0.1.0",
+    "@pai/verify": "^0.1.0",
+    "@pai/wallet": "^0.1.0",
     "hono": "^4.6.5",
     "jose": "^5.6.3",
     "zod": "^3.23.8"
