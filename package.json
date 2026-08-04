@@ -13,7 +13,8 @@
     "check": "tsc --noEmit",
     "typegen": "wrangler types",
     "test": "vitest run",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@pai/crypto": "^0.1.0",

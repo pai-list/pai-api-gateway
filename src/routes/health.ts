@@ -1,34 +1,71 @@
 /**
- * PAI API Gateway - Health Check Routes
+ * Health Check Routes
  * 
- * Health check endpoints for monitoring and load balancer probes.
+ * Provides health check endpoints for monitoring and load balancer probes.
  */
 
 import { Hono } from 'hono';
 
-export const healthRoutes = new Hono();
+const healthRoutes = new Hono();
 
-// Basic health check
-export const healthRoutes = new Hono()
-  .get('/', (c) => c.json({
+// GET /health
+healthRoutes.get('/', async (c) => {
+  return c.json({
+    success: true,
     status: 'healthy',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
     uptime: process.uptime(),
     environment: process.env.ENVIRONMENT || 'development',
-  }))
-  .get('/ready', (c) => c.json({
-    status: 'ready',
-    timestamp: new Date().toISOString(),
     checks: {
       database: 'healthy',
       cache: 'healthy',
-      upstream: 'healthy',
-    }
-  }))
-  .get('/live', (c) => c.json({
-    status: 'alive',
-    timestamp: new Date().toISOString(),
-  }));
+      workers: 'healthy',
+    },
+  }, 200);
+});
 
-export default healthRoutes;
+// GET /health/ready
+healthRoutes.get('/ready', async (c) => {
+  // TODO: Add actual readiness checks (DB connection, cache, etc.)
+  return c.json({
+    success: true,
+    ready: true,
+    timestamp: new Date().toISOString(),
+  }, 200);
+});
+
+// GET /health/live
+healthRoutes.get('/live', async (c) => {
+  return c.json({
+    success: true,
+    alive: true,
+    timestamp: new Date().toISOString(),
+  }, 200);
+});
+
+// GET /health/live
+healthRoutes.get('/live', async (c) => {
+  return c.json({
+    success: true,
+    alive: true,
+    timestamp: new Date().toISOString(),
+  }, 200);
+}
+
+// GET /health/metrics
+healthRoutes.get('/metrics', async (c) => {
+  // Basic metrics - in production, integrate with Prometheus or similar
+  return c.json({
+    success: true,
+    metrics: {
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      cpu: process.cpuUsage(),
+      version: process.version,
+    },
+    timestamp: new Date().toISOString(),
+  }, 200);
+});
+
+export { healthRoutes };

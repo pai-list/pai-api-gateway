@@ -70,5 +70,6 @@
         { "pattern": "api.axiomid.app/*", "zone_name": "axiomid.app" }
       ]
     }
-  }
+  },
+  "external": ["hono", "hono/http-exception"]
 }

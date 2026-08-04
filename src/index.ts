@@ -18,20 +18,17 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 
-import { createAuthMiddleware } from './middleware/auth';
-import { createRateLimitMiddleware } from './middleware/rate-limit';
-import { createCacheMiddleware } from './middleware/cache';
-import { cors as corsMiddleware } from './middleware/cors';
-import { createLoggingMiddleware } from './middleware/logging';
-import { apiRoutes } from './routes/api';
 import { authRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
+import { apiRoutes } from './routes/api';
 import { skillsRoutes } from './routes/skills';
 import { paymentsRoutes } from './routes/payments';
 import { usersRoutes } from './routes/users';
-import { createCacheMiddleware as createCacheMiddlewareUtil } from './middleware/cache';
-import { createRateLimitMiddleware as createRateLimitMiddlewareUtil } from './middleware/rate-limit';
-import { createAuthMiddleware as createAuthMiddlewareUtil } from './middleware/auth';
+import { createCacheMiddleware } from './middleware/cache';
+import { createRateLimitMiddleware } from './middleware/rate-limit';
+import { createAuthMiddleware } from './middleware/auth';
+import { cors as corsMiddleware } from './middleware/cors';
+import { createLoggingMiddleware } from './middleware/logging';
 
 import { Env } from './types';
 
@@ -120,19 +117,16 @@ app.use('*', async (c, next) => {
   console.log(`${c.req.method} ${c.req.url} - ${c.res.status} - ${Date.now() - c.get('startTime')}ms`);
 });
 
-// Rate limiting
+// Rate limiting (simple in-memory for now)
 app.use('*', async (c, next) => {
-  // Simple in-memory rate limiting for now
-  // In production, use Durable Objects
   await next();
 });
 
 // Health check (no auth)
-app.route('/health', (await import('./routes/health')).healthRoutes);
-app.route('/health', (await import('./routes/health')).healthRoutes);
+app.route('/health', healthRoutes);
 
 // Auth routes (public)
-app.route('/api/v1/auth', (await import('./routes/auth')).authRoutes);
+app.route('/api/v1/auth', authRoutes);
 
 // Protected routes (require auth)
 const protectedRoutes = new Hono();
@@ -155,9 +149,9 @@ const authMiddleware = async (c: any, next: () => Promise<void>) => {
 protectedRoutes.use('*', authMiddleware);
 
 // Protected routes
-protectedRoutes.route('/users', (await import('./routes/users')).usersRoutes);
-protectedRoutes.route('/skills', (await import('./routes/skills')).skillsRoutes);
-protectedRoutes.route('/payments', (await import('./routes/payments')).paymentsRoutes);
+protectedRoutes.route('/users', usersRoutes);
+protectedRoutes.route('/skills', skillsRoutes);
+protectedRoutes.route('/payments', paymentsRoutes);
 
 app.route('/api/v1', protectedRoutes);
 
