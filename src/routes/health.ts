@@ -44,15 +44,6 @@ healthRoutes.get('/live', async (c) => {
   }, 200);
 });
 
-// GET /health/live
-healthRoutes.get('/live', async (c) => {
-  return c.json({
-    success: true,
-    alive: true,
-    timestamp: new Date().toISOString(),
-  }, 200);
-}
-
 // GET /health/metrics
 healthRoutes.get('/metrics', async (c) => {
   // Basic metrics - in production, integrate with Prometheus or similar

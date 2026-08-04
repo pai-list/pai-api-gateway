@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build and dist
+dist/
+build/
+.wrangler/
+.turbo/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS and IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Coverage
+coverage/
