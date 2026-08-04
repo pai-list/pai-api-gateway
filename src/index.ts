@@ -64,9 +64,6 @@ app.use('*', async (c, next) => {
   const allowedOrigins = [
     'https://axiomid.app',
     'https://*.axiomid.app',
-    'https://pai.build',
-    'https://*.pai.build',
-    'https://api.axiomid.app',
     'http://localhost:3000',
     'http://localhost:8787',
   ];

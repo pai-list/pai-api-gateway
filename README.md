@@ -369,7 +369,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 - **Issues**: [GitHub Issues](https://github.com/pai-list/pai-api-gateway/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/pai-list/pai-api-gateway/discussions)
 - **Discord**: [PAI Community](https://discord.gg/pai-universe)
-- **Docs**: [docs.pai.build](https://docs.pai.build)
+- **Docs**: [docs.axiomid.app](https://docs.axiomid.app)
 
 ---
 

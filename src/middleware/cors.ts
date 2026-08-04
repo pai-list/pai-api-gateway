@@ -37,10 +37,6 @@ export function createCORSMiddleware(options: CORSOptions): MiddlewareHandler {
     const allowedOrigins = [
       'https://axiomid.app',
       'https://*.axiomid.app',
-      'https://pai.build',
-      'https://*.pai.build',
-      'https://api.axiomid.app',
-      'https://api.pai.build',
       'http://localhost:3000',
       'http://localhost:8787',
       'http://127.0.0.1:3000',
