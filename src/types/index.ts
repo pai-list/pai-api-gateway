@@ -94,8 +94,6 @@ export interface APIKey {
   metadata?: Record<string, any>;
 }
 
-export type Tier = 'free' | 'basic' | 'pro' | 'enterprise';
-
 // Request/Response Types
 export interface APIRequest extends Request {
   cf?: {
@@ -294,9 +292,46 @@ export interface MiddlewareContext {
   apiKey?: APIKey;
   rateLimitInfo?: RateLimitInfo;
   cacheInfo?: CacheInfo;
-  requestId: string;
-  startTime: number;
 }
 
 // Route Handler Type
 export type RouteHandler = (request: Request, context: MiddlewareContext) => Promise<Response>;
+
+// Cloudflare Worker Environment
+export interface Env {
+  // KV Namespaces
+  PASSPORTS?: KVNamespace;
+  CACHE?: KVNamespace;
+  RATE_LIMIT?: KVNamespace;
+  API_KEYS?: KVNamespace;
+  
+  // Durable Objects
+  RATE_LIMIT_DO?: DurableObjectNamespace;
+  TRUSTCHAIN_DO?: DurableObjectNamespace;
+  
+  // R2 Buckets
+  R2_BUCKET?: R2Bucket;
+  
+  // D1 Databases
+  D1_DB?: D1Database;
+  
+  // Vectorize
+  VECTORIZEDB?: VectorizeIndex;
+  
+  // Workers AI
+  AI?: any;
+  
+  // Secrets
+  JWT_SECRET: string;
+  JWT_ISSUER: string;
+  JWT_AUDIENCE: string;
+  SOVEREIGN_KEY_SALT: string;
+  PI_API_KEY: string;
+  PI_WEBHOOK_SECRET: string;
+  
+  // Config
+  ENVIRONMENT: 'development' | 'staging' | 'production';
+  LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error';
+}
+
+export { Tier } from './index';

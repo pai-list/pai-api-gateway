@@ -24,9 +24,11 @@ import { apiRoutes } from './routes/api';
 import { skillsRoutes } from './routes/skills';
 import { paymentsRoutes } from './routes/payments';
 import { usersRoutes } from './routes/users';
+import { heartbeatRoutes } from './routes/heartbeat';
 import { createCacheMiddleware } from './middleware/cache';
 import { createRateLimitMiddleware } from './middleware/rate-limit';
 import { createAuthMiddleware } from './middleware/auth';
+import { createAIPAuthMiddleware } from './middleware/aip-auth';
 import { cors as corsMiddleware } from './middleware/cors';
 import { createLoggingMiddleware } from './middleware/logging';
 
@@ -128,6 +130,21 @@ app.route('/api/v1/auth', authRoutes);
 // Protected routes (require auth)
 const protectedRoutes = new Hono();
 
+// AIP Auth middleware (for DID-based auth)
+const aipAuthMiddleware = createAIPAuthMiddleware({
+  excludePaths: ['/api/v1/agents/heartbeat', '/health', '/api/v1/auth'],
+  didResolver: async (did: string) => {
+    // In production: resolve from TrustChain/DID Registry
+    if (did.startsWith('did:axiomid:pi:')) {
+      return {
+        publicKey: 'mock_public_key_base64', // In production: resolve from TrustChain
+        metadata: { trustScore: 85, capabilities: ['pi-transfer', 'text-analysis'] }
+      };
+    }
+    return null;
+  },
+});
+
 // Auth middleware
 const authMiddleware = async (c: any, next: () => Promise<void>) => {
   const authHeader = c.req.header('authorization');
@@ -150,7 +167,13 @@ protectedRoutes.route('/users', usersRoutes);
 protectedRoutes.route('/skills', skillsRoutes);
 protectedRoutes.route('/payments', paymentsRoutes);
 
+// AIP DID Auth routes (for agent heartbeat, etc.)
+const aipRoutes = new Hono();
+aipRoutes.use('*', aipAuthMiddleware);
+aipRoutes.route('/agents', heartbeatRoutes);
+
 app.route('/api/v1', protectedRoutes);
+app.route('/api/v1', aipRoutes);
 
 // API info
 app.get('/api', (c) => c.json({
