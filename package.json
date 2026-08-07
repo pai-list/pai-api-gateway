@@ -3,11 +3,11 @@
   "description": "PAI API Gateway - Cloudflare Worker API Gateway with Hono, JWT auth, rate limiting, caching",
   "version": "1.0.0",
   "dependencies": {
-    "@axiomid/crypto": "^0.1.0",
-    "@axiomid/sdk": "^0.1.0",
-    "@pai/identity": "^0.1.0",
-    "@pai/verify": "^0.1.0",
-    "@pai/wallet": "^0.1.0",
+    "@axiomid/crypto": "workspace:*",
+    "@axiomid/sdk": "workspace:*",
+    "@pai/identity": "workspace:*",
+    "@pai/verify": "workspace:*",
+    "@pai/wallet": "workspace:*",
     "hono": "^4.6.5",
     "jose": "^5.9.6",
     "zod": "^4.4.3"
