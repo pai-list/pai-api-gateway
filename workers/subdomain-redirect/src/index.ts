@@ -80,11 +80,14 @@ async function handleRequest(request: Request): Promise<Response> {
     return fetch(request);
   }
 
-  const aliasTarget = SUBDOMAIN_REDIRECTS[subdomain];
-  if (aliasTarget) {
+  if (Object.prototype.hasOwnProperty.call(SUBDOMAIN_REDIRECTS, subdomain)) {
+    const aliasTarget = SUBDOMAIN_REDIRECTS[subdomain];
+    const redirectUrl = new URL(aliasTarget);
+    redirectUrl.pathname = url.pathname;
+    redirectUrl.search = url.search;
     return new Response(null, {
       status: 301,
-      headers: { Location: aliasTarget, ...CORS_HEADERS },
+      headers: { Location: redirectUrl.toString(), ...CORS_HEADERS },
     });
   }
 
