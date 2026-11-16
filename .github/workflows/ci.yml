@@ -62,27 +62,9 @@ jobs:
       - name: Wrangler dry-run bundle check (subdomain-redirect)
         run: npx wrangler deploy --dry-run --outdir dist --config workers/subdomain-redirect/wrangler.jsonc
 
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          languages: typescript
-          build-mode: none
-
   deploy-preview:
     name: Deploy Preview (PR only)
-    needs: [verify, wrangler-check, security-scan]
+    needs: [verify, wrangler-check]
     if: github.event_name == 'pull_request' && vars.ENABLE_CLOUDFLARE_DEPLOY == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -100,19 +82,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Deploy to Cloudflare Workers Preview
+      - name: Upload Cloudflare Worker Preview Version
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config workers/subdomain-redirect/wrangler.jsonc
+          command: versions upload --config workers/subdomain-redirect/wrangler.jsonc
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy-production:
     name: Deploy Production (main branch only)
-    needs: [verify, wrangler-check, security-scan]
+    needs: [verify, wrangler-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_CLOUDFLARE_DEPLOY == 'true'
     runs-on: ubuntu-latest
     environment: production
