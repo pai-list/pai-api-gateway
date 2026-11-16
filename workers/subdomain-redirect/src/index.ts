@@ -13,17 +13,28 @@ const VALID_SUBDOMAIN = /^[a-z0-9][a-z0-9-]{2,29}$/;
 // Source of truth: pai-docs/docs/protocols/edge-deployment.md (subdomain registry).
 const PASSTHROUGH_SUBDOMAINS = new Set([
   // Consumer products
-  "www", "gspace", "pai-website",
-  // Protocol services (deployed or pending — origin decides, never passport)
-  "aip", "auth", "earn", "jobs", "ppp", "mcp", "openid",
-  "memory", "skills", "agdp", "docs", "pai-docs", "blog",
-  // API / infrastructure behind own origin
-  "api", "mail", "email",
+  "www", "gspace",
+  // Protocol & infrastructure services backed by dedicated origins/workers
+  "docs", "openid", "api", "aip", "auth", "earn", "ppp", "mcp",
+  "memory", "skills", "agdp", "mail", "harness", "learn", "index",
+  "node", "piverify", "signaling",
 ]);
 
+const SUBDOMAIN_REDIRECTS: Record<string, string> = {
+  "pai-docs": "https://docs.axiomid.app",
+  "pai-website": "https://axiomid.app",
+  "jobs": "https://earn.axiomid.app",
+  "email": "https://mail.axiomid.app",
+  "verifier": "https://piverify.axiomid.app",
+  "verify": "https://piverify.axiomid.app",
+};
+
 const RESERVED_SUBDOMAINS = new Set([
-  "dashboard", "app", "status", "admin", "dev",
+  "dashboard", "app", "status", "admin", "dev", "blog",
   "ftp", "ns1", "ns2", "smtp", "pop", "imap", "cdn", "assets",
+  "static", "build", "hub", "testnet", "send", "discover", "agent",
+  "dev-portal", "deploy", "connect", "pay", "youtube", "facebook",
+  "twitter", "images", "video", "truth", "horizon", "scope",
 ]);
 
 const CORS_HEADERS: Record<string, string> = {
@@ -39,6 +50,11 @@ const worker = {
 };
 
 async function handleRequest(request: Request): Promise<Response> {
+  const upgradeHeader = request.headers.get("Upgrade");
+  if (upgradeHeader?.toLowerCase() === "websocket") {
+    return fetch(request);
+  }
+
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
@@ -62,6 +78,14 @@ async function handleRequest(request: Request): Promise<Response> {
   // Real proxied apps must reach their origin (Vercel) untouched
   if (PASSTHROUGH_SUBDOMAINS.has(subdomain)) {
     return fetch(request);
+  }
+
+  const aliasTarget = SUBDOMAIN_REDIRECTS[subdomain];
+  if (aliasTarget) {
+    return new Response(null, {
+      status: 301,
+      headers: { Location: aliasTarget, ...CORS_HEADERS },
+    });
   }
 
   if (RESERVED_SUBDOMAINS.has(subdomain)) {
