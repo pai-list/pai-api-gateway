@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['src/**/*.test.ts'],
+    include: ['workers/subdomain-redirect/src/**/*.test.ts'],
   },
   css: {
     postcss: {

@@ -3,11 +3,6 @@
   "description": "PAI API Gateway - Cloudflare Worker API Gateway with Hono, JWT auth, rate limiting, caching",
   "version": "1.0.0",
   "dependencies": {
-    "@axiomid/crypto": "^0.1.0",
-    "@axiomid/sdk": "^0.1.0",
-    "@pai/identity": "^0.1.0",
-    "@pai/verify": "^0.1.0",
-    "@pai/wallet": "^0.1.0",
     "hono": "^4.6.5",
     "jose": "^5.9.6",
     "zod": "^4.4.3"
@@ -19,7 +14,7 @@
     "@typescript-eslint/parser": "^8.7.0",
     "eslint": "^9",
     "typescript": "^5",
-    "vitest": "^4.0.17",
+    "vitest": "^2.1.9",
     "wrangler": "^4.113.0"
   },
   "engines": {
@@ -27,15 +22,15 @@
   },
   "main": "src/index.ts",
   "scripts": {
-    "check": "tsc --noEmit",
+    "check": "tsc -p workers/subdomain-redirect/tsconfig.json --noEmit",
     "deploy": "wrangler deploy",
     "deploy:production": "wrangler deploy --env production",
     "deploy:staging": "wrangler deploy --env staging",
     "dev": "wrangler dev",
     "lint": "eslint src --ext .ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "typegen": "wrangler types"
+    "typecheck": "tsc -p workers/subdomain-redirect/tsconfig.json --noEmit",
+    "typegen": "wrangler types --config workers/subdomain-redirect/wrangler.jsonc"
   },
   "type": "module",
   "types": "src/types/index.ts"

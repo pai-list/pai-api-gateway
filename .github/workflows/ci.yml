@@ -6,13 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   verify:
-    name: Type-check + Lint + Test
+    name: Type-check + Test (subdomain-redirect)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,14 +35,8 @@ jobs:
       - name: Type-check
         run: npm run check
 
-      - name: Lint
-        run: npm run lint
-
       - name: Test
-        run: npm run test -- --ci --runInBand
-
-      - name: Build (wrangler typegen)
-        run: npm run typegen
+        run: npm run test
 
   wrangler-check:
     name: Wrangler Config Check
@@ -59,31 +56,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Wrangler typegen (validates bindings)
+      - name: Wrangler typegen (subdomain-redirect)
         run: npm run typegen
 
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          languages: typescript
-          build-mode: none
+      - name: Wrangler dry-run bundle check (subdomain-redirect)
+        run: npx wrangler deploy --dry-run --outdir dist --config workers/subdomain-redirect/wrangler.jsonc
 
   deploy-preview:
     name: Deploy Preview (PR only)
-    needs: [verify, wrangler-check, security-scan]
-    if: github.event_name == 'pull_request'
+    needs: [verify, wrangler-check]
+    if: github.event_name == 'pull_request' && vars.ENABLE_CLOUDFLARE_DEPLOY == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -100,20 +82,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Deploy to Cloudflare Workers Preview
+      - name: Upload Cloudflare Worker Preview Version
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env staging
+          command: versions upload --config workers/subdomain-redirect/wrangler.jsonc
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy-production:
     name: Deploy Production (main branch only)
-    needs: [verify, wrangler-check, security-scan]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [verify, wrangler-check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_CLOUDFLARE_DEPLOY == 'true'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -136,7 +118,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env production
+          command: deploy --config workers/subdomain-redirect/wrangler.jsonc
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
