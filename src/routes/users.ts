@@ -10,9 +10,16 @@ import { HTTPException } from 'hono/http-exception';
 
 const usersRoutes = new Hono();
 
+// Define user type from auth context
+interface AuthUser {
+  id?: string;
+  username?: string;
+  tier?: string;
+}
+
 // GET /api/v1/users/me
 usersRoutes.get('/me', async (c) => {
-  const user = c.get('user');
+  const user = c.get('user') as AuthUser | undefined;
   
   if (!user) {
     throw new HTTPException(401, { message: 'Not authenticated' });
@@ -21,10 +28,10 @@ usersRoutes.get('/me', async (c) => {
   return c.json({
     success: true,
     data: {
-      id: user.id || 'user_123',
-      username: user.username || 'demo_user',
+      id: user.id ?? 'user_123',
+      username: user.username ?? 'demo_user',
       email: 'user@example.com',
-      tier: user.tier || 'pro',
+      tier: user.tier ?? 'pro',
       xp: 1250,
       trustScore: 95,
       kyaStatus: 'VERIFIED',
@@ -37,7 +44,7 @@ usersRoutes.get('/me', async (c) => {
 
 // GET /api/v1/users/me/stats
 usersRoutes.get('/me/stats', async (c) => {
-  const user = c.get('user');
+  const user = c.get('user') as AuthUser | undefined;
   
   if (!user) {
     throw new HTTPException(401, { message: 'Not authenticated' });
@@ -84,7 +91,7 @@ usersRoutes.put('/me', async (c) => {
     }, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      throw new HTTPException(400, { message: 'Validation error', cause: error.errors });
+      throw new HTTPException(400, { message: 'Validation error', cause: error.issues });
     }
     throw error;
   }
@@ -112,7 +119,7 @@ usersRoutes.put('/me/password', async (c) => {
     }, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      throw new HTTPException(400, { message: 'Validation error', cause: error.errors });
+      throw new HTTPException(400, { message: 'Validation error', cause: error.issues });
     }
     throw error;
   }

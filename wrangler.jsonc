@@ -4,12 +4,6 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-02",
   "compatibility_flags": ["nodejs_compat"],
-  "vars": {
-    "ENVIRONMENT": "production",
-    "API_VERSION": "v1",
-    "JWT_ISSUER": "pai-api-gateway",
-    "JWT_AUDIENCE": "pai-api-users"
-  },
   "durable_objects": {
     "bindings": [
       {
@@ -42,8 +36,7 @@
     "JWT_AUDIENCE": "pai-api-users",
     "RATE_LIMIT_RPM": "60",
     "RATE_LIMIT_WINDOW_MS": "60000",
-    "CACHE_TTL_SECONDS": "300",
-    "UPSTREAM_URL": "https://api.axiomid.app"
+    "CACHE_TTL_SECONDS": "300"
   },
   "migrations": [
     {
@@ -57,14 +50,12 @@
   "env": {
     "staging": {
       "vars": {
-        "ENVIRONMENT": "staging",
-        "UPSTREAM_URL": "https://api-staging.axiomid.app"
+        "ENVIRONMENT": "staging"
       }
     },
     "production": {
       "vars": {
-        "ENVIRONMENT": "production",
-        "UPSTREAM_URL": "https://api.axiomid.app"
+        "ENVIRONMENT": "production"
       },
       "routes": [
         { "pattern": "api.axiomid.app/*", "zone_name": "axiomid.app" }

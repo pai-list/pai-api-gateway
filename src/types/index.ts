@@ -45,7 +45,7 @@ export interface CacheConfig {
   staleWhileRevalidate?: number;
 }
 
-export interface CacheEntry<T = any> {
+export interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
   ttl: number;
@@ -91,7 +91,7 @@ export interface APIKey {
   lastUsedAt?: number;
   expiresAt?: number;
   revoked: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Request/Response Types
@@ -110,7 +110,7 @@ export interface APIRequest extends Request {
   };
 }
 
-export interface APIResponse<T = any> {
+export interface APIResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: APIError;
@@ -120,7 +120,7 @@ export interface APIResponse<T = any> {
 export interface APIError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   statusCode: number;
   requestId: string;
 }
@@ -226,7 +226,7 @@ export class GatewayError extends Error {
     public code: string,
     message: string,
     public statusCode: number = 500,
-    public details?: Record<string, any>
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'GatewayError';
@@ -234,7 +234,7 @@ export class GatewayError extends Error {
 }
 
 export class ValidationError extends GatewayError {
-  constructor(message: string, public details?: Record<string, any>) {
+  constructor(message: string, public details?: Record<string, unknown>) {
     super('VALIDATION_ERROR', message, 400, details);
     this.name = 'ValidationError';
   }
@@ -319,7 +319,7 @@ export interface Env {
   VECTORIZEDB?: VectorizeIndex;
   
   // Workers AI
-  AI?: any;
+  AI?: unknown;
   
   // Secrets
   JWT_SECRET: string;
@@ -334,4 +334,5 @@ export interface Env {
   LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error';
 }
 
+// Re-export Tier
 export { Tier } from './index';

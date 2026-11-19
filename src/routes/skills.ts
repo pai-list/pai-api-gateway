@@ -10,6 +10,27 @@ import { HTTPException } from 'hono/http-exception';
 
 const skillsRoutes = new Hono();
 
+// Type definitions
+interface Skill {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  tier: string;
+  pricePi: number;
+  version: string;
+  installCount: number;
+  avgRating: number;
+  ratingCount: number;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
+  configSchema: Record<string, unknown>;
+}
+
+type SortKey = 'avgRating' | 'pricePi' | 'installCount' | 'updatedAt' | 'createdAt';
+
 // Validation schemas
 const SearchSkillsSchema = z.object({
   q: z.string().optional(),
@@ -41,7 +62,7 @@ const UpdateSkillSchema = z.object({
 });
 
 // Mock skills database (in production, use D1 or KV)
-const mockSkills = [
+const mockSkills: Skill[] = [
   {
     id: 'skill-1',
     slug: 'research-bot',
@@ -114,14 +135,21 @@ const mockSkills = [
   },
 ];
 
+// Map sort parameter to actual Skill property
+const sortKeyMap: Record<string, keyof Skill> = {
+  rating: 'avgRating',
+  price: 'pricePi',
+  installs: 'installCount',
+  updated: 'updatedAt',
+  created: 'createdAt',
+};
+
 // GET /api/v1/skills - Search and list skills
 skillsRoutes.get('/', async (c) => {
   try {
-    const query = c.req.query();
     const {
       q,
       tier,
-      category,
       author,
       minRating,
       maxPrice,
@@ -135,7 +163,7 @@ skillsRoutes.get('/', async (c) => {
 
     // Filter by query
     if (c.req.query('q')) {
-      const query = c.req.query('q').toLowerCase();
+      const query = c.req.query('q')?.toLowerCase() ?? '';
       results = results.filter(s => 
         s.name.toLowerCase().includes(query) ||
         s.description.toLowerCase().includes(query) ||
@@ -164,9 +192,10 @@ skillsRoutes.get('/', async (c) => {
     }
 
     // Sort
+    const sortKey = sortKeyMap[sort] ?? 'avgRating';
     results.sort((a, b) => {
-      let aVal = a[sort];
-      let bVal = b[sort];
+      let aVal = a[sortKey];
+      let bVal = b[sortKey];
       if (typeof aVal === 'string') {
         aVal = aVal.toLowerCase();
         bVal = bVal.toLowerCase();
@@ -196,15 +225,16 @@ skillsRoutes.get('/', async (c) => {
       },
     }, 200);
   } catch (error) {
-    throw new Error(`Failed to search skills: ${error.message}`);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to search skills: ${message}`);
   }
 });
 
 // GET /api/v1/skills/:id
-  skillsRoutes.get('/:id', async (c) => {
-    try {
-      const id = c.req.param('id');
-      const skill = mockSkills.find(s => s.id === id);
+skillsRoutes.get('/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const skill = mockSkills.find(s => s.id === id);
     
     if (!skill) {
       throw new Error('Skill not found');
@@ -215,12 +245,12 @@ skillsRoutes.get('/', async (c) => {
       data: skill,
     }, 200);
   } catch (error) {
-    throw new Error(`Failed to get skill: ${error.message}`);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to get skill: ${message}`);
   }
 });
 
 // POST /api/v1/skills - Install a skill
-
 skillsRoutes.post('/', async (c) => {
   try {
     const body = await c.req.json();
@@ -235,23 +265,22 @@ skillsRoutes.post('/', async (c) => {
       success: true,
       message: 'Skill installed successfully (mock)',
       data: {
-        skillId: c.req.param('skillId') || body.skillId,
-        version: body.version || 'latest',
-        config: body.config || {},
+        skillId: body.skillId,
+        version: version ?? 'latest',
+        config: config ?? {},
         installedAt: new Date().toISOString(),
         instanceId: `inst_${Date.now()}`,
       },
     }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      throw new Error(`Validation error: ${error.errors.map(e => e.message).join(', ')}`);
+      throw new HTTPException(400, { message: 'Validation error', cause: error.issues });
     }
     throw error;
   }
 });
 
 // PUT /api/v1/skills/:id - Update skill (author only)
-
 skillsRoutes.put('/:id', async (c) => {
   try {
     const id = c.req.param('id');
@@ -259,7 +288,6 @@ skillsRoutes.put('/:id', async (c) => {
     const data = UpdateSkillSchema.parse(body);
     
     // TODO: Implement actual skill update with authorization check
-    // For now, return mock response
     return c.json({
       success: true,
       message: 'Skill updated successfully (mock)',
@@ -271,7 +299,7 @@ skillsRoutes.put('/:id', async (c) => {
     }, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      throw new Error(`Validation error: ${error.errors.map(e => e.message).join(', ')}`);
+      throw new HTTPException(400, { message: 'Validation error', cause: error.issues });
     }
     throw error;
   }
@@ -287,12 +315,13 @@ skillsRoutes.delete('/:id', async (c) => {
       success: true,
       message: 'Skill uninstalled successfully (mock)',
       data: {
-        skillId: c.req.param('id'),
+        skillId: id,
         uninstalledAt: new Date().toISOString(),
       },
     }, 200);
   } catch (error) {
-    throw new Error(`Failed to uninstall skill: ${error.message}`);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to uninstall skill: ${message}`);
   }
 });
 
@@ -343,15 +372,15 @@ skillsRoutes.post('/:id/review', async (c) => {
       success: true,
       message: 'Review submitted successfully (mock)',
       data: {
-        skillId: c.req.param('id'),
+        skillId: id,
         rating,
-        comment: body.comment || '',
+        comment: body.comment ?? '',
         submittedAt: new Date().toISOString(),
       },
     }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      throw new Error(`Validation error: ${error.errors.map(e => e.message).join(', ')}`);
+      throw new HTTPException(400, { message: 'Validation error', cause: error.issues });
     }
     throw error;
   }

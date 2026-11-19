@@ -14,9 +14,7 @@
  */
 
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { secureHeaders } from 'hono/secure-headers';
 
 import { authRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
@@ -29,25 +27,36 @@ import { createCacheMiddleware } from './middleware/cache';
 import { createRateLimitMiddleware } from './middleware/rate-limit';
 import { createAuthMiddleware } from './middleware/auth';
 import { createAIPAuthMiddleware } from './middleware/aip-auth';
-import { cors as corsMiddleware } from './middleware/cors';
 import { createLoggingMiddleware } from './middleware/logging';
 
 import { Env } from './types';
 
+// Extend Hono's context type
+declare module 'hono' {
+  interface ContextVariableMap {
+    requestId: string;
+    startTime: number;
+    user: {
+      id: string;
+      tier: string;
+      username?: string;
+    };
+  }
+}
+
 // Create Hono app
 const app = new Hono<{ Bindings: Env }>();
 
-// Global middleware
+// Global middleware - Request ID & timing
 app.use('*', async (c, next) => {
-  // Add request ID
   const requestId = crypto.randomUUID();
-  c.set('requestId', crypto.randomUUID());
+  c.set('requestId', requestId);
   c.set('startTime', Date.now());
   await next();
   
   // Add response headers
-  c.res.headers.set('X-Request-ID', c.get('requestId') || '');
-  c.res.headers.set('X-Response-Time', `${Date.now() - (c.get('startTime') || Date.now())}ms`);
+  c.res.headers.set('X-Request-ID', requestId);
+  c.res.headers.set('X-Response-Time', `${Date.now() - (c.get('startTime') as number)}ms`);
 });
 
 // Security headers
@@ -60,7 +69,7 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// CORS
+// CORS - Origin check
 app.use('*', async (c, next) => {
   const origin = c.req.header('origin');
   const allowedOrigins = [
@@ -72,7 +81,7 @@ app.use('*', async (c, next) => {
   
   const isAllowed = origin && (
     allowedOrigins.includes(origin) ||
-    allowedOrigins.some(o => o.includes('*') && new RegExp('^' + o.replace(/\*/g, '.*').replace(/\./g, '\\.') + '$').test(origin))
+    allowedOrigins.some(o => o.includes('*') && new RegExp('^' + o.replace(/\*/g, '.*').replace(/\./g, '\\.') + '$').test(origin || ''))
   );
   
   if (origin && !isAllowed) {
@@ -82,7 +91,7 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// CORS
+// CORS headers
 app.use('*', async (c, next) => {
   const origin = c.req.header('origin') || '*';
   c.res.headers.set('Access-Control-Allow-Origin', c.req.header('origin') || '*');
@@ -112,8 +121,8 @@ app.use('*', async (c, next) => {
 app.use('*', async (c, next) => {
   const start = Date.now();
   await next();
-  const duration = Date.now() - c.get('startTime');
-  console.log(`${c.req.method} ${c.req.url} - ${c.res.status} - ${Date.now() - c.get('startTime')}ms`);
+  const duration = Date.now() - (c.get('startTime') as number);
+  console.log(`${c.req.method} ${c.req.url} - ${c.res.status} - ${duration}ms`);
 });
 
 // Rate limiting (simple in-memory for now)
@@ -129,21 +138,6 @@ app.route('/api/v1/auth', authRoutes);
 
 // Protected routes (require auth)
 const protectedRoutes = new Hono();
-
-// AIP Auth middleware (for DID-based auth)
-const aipAuthMiddleware = createAIPAuthMiddleware({
-  excludePaths: ['/api/v1/agents/heartbeat', '/health', '/api/v1/auth'],
-  didResolver: async (did: string) => {
-    // In production: resolve from TrustChain/DID Registry
-    if (did.startsWith('did:axiomid:pi:')) {
-      return {
-        publicKey: 'mock_public_key_base64', // In production: resolve from TrustChain
-        metadata: { trustScore: 85, capabilities: ['pi-transfer', 'text-analysis'] }
-      };
-    }
-    return null;
-  },
-});
 
 // Auth middleware
 const authMiddleware = async (c: any, next: () => Promise<void>) => {
@@ -169,7 +163,41 @@ protectedRoutes.route('/payments', paymentsRoutes);
 
 // AIP DID Auth routes (for agent heartbeat, etc.)
 const aipRoutes = new Hono();
-aipRoutes.use('*', aipAuthMiddleware);
+
+// AIP Auth middleware (for DID-based auth)
+import { createAIPAuthMiddleware } from './middleware/aip-auth';
+
+const aipAuthMiddleware = createAIPAuthMiddleware({
+  excludePaths: ['/api/v1/agents/heartbeat', '/health', '/api/v1/auth'],
+  didResolver: async (did: string) => {
+    // In production: resolve from TrustChain/DID Registry
+    if (did.startsWith('did:axiomid:pi:')) {
+      return {
+        publicKey: 'mock_public_key_base64', // In production: resolve from TrustChain
+        metadata: { trustScore: 85, capabilities: ['pi-transfer', 'text-analysis'] }
+      };
+    }
+    return null;
+  },
+});
+
+const aipRoutes = new Hono();
+aipRoutes.use('*', (async (c: any, next: () => Promise<void>) => {
+  const aipAuth = createAIPAuthMiddleware({
+    excludePaths: ['/api/v1/agents/heartbeat', '/health', '/api/v1/auth'],
+    didResolver: async (did: string) => {
+      if (did.startsWith('did:axiomid:pi:')) {
+        return {
+          publicKey: 'mock_public_key_base64',
+          metadata: { trustScore: 85, capabilities: ['pi-transfer', 'text-analysis'] }
+        };
+      }
+      return null;
+    },
+  });
+  return aipAuth(c, next);
+}));
+
 aipRoutes.route('/agents', heartbeatRoutes);
 
 app.route('/api/v1', protectedRoutes);
@@ -192,8 +220,8 @@ app.onError((err, c) => {
   console.error('Error:', err);
   return c.json({ 
     error: 'Internal server error', 
-    message: err.message,
-    requestId: c.get('requestId') 
+    message: err instanceof Error ? err.message : 'Unknown error',
+    requestId: c.get('requestId') as string || '' 
   }, 500);
 });
 
